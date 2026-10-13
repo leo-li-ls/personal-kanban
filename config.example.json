@@ -1,0 +1,5 @@
+{
+  "board_name": "Personal Kanban",
+  "devlog_root": "/absolute/path/to/your/devlog-data",
+  "port": 8765
+}

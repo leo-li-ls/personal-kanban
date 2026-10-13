@@ -1,0 +1,137 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Personal Kanban</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#1e2128;--col:#2a2e37;--card:#353a45;--fg:#e6e8ec;--mut:#8a91a0;--acc:#6aa9ff}
+*{box-sizing:border-box}body{margin:0;font:14px -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--fg);height:100vh;display:flex;flex-direction:column}
+header{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #000}
+header h1{font-size:16px;margin:0 8px 0 0}input,textarea,button{font:inherit;color:var(--fg);background:var(--card);border:1px solid #444a57;border-radius:6px;padding:6px 8px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+#board{flex:1;display:flex;gap:12px;padding:12px 16px;overflow-x:auto;align-items:flex-start}
+.col{background:var(--col);border-radius:8px;flex:1 1 0;min-width:300px;max-height:100%;display:flex;flex-direction:column}
+.col.collapsed{flex:none;width:180px;min-width:0}
+.ch{display:flex;align-items:center;gap:6px;padding:10px;font-weight:600}.ch .n{color:var(--mut);font-weight:400}
+.ch .name{flex:1;cursor:pointer}.ch button{padding:2px 6px;border:none;background:none;color:var(--mut)}
+.cards{overflow-y:auto;padding:0 8px 8px;min-height:30px;flex:1}
+.card{background:var(--card);border-radius:6px;padding:8px;margin-bottom:6px;cursor:grab;word-break:break-word}
+.card.done .t{text-decoration:line-through;color:var(--mut)}.card.drag{opacity:.4}
+.tags span{display:inline-block;font-size:11px;color:var(--acc);margin:4px 6px 0 0;cursor:pointer}
+.over{outline:2px dashed var(--acc)}.add{margin:0 8px 8px}.add input{width:100%}
+dialog{background:var(--col);color:var(--fg);border:1px solid #555;border-radius:10px;width:640px;max-width:95vw}
+dialog::backdrop{background:#0008}dialog input[type=text],dialog textarea{width:100%;margin-bottom:8px}dialog textarea{height:280px;font-family:ui-monospace,monospace;font-size:12px}
+.mk{margin-right:6px}.dd{color:var(--mut);font-size:11px;margin-left:6px}header label{color:var(--mut);font-size:13px;white-space:nowrap}
+ dialog label.f{display:block;font-size:11px;color:var(--mut);margin:4px 0 2px}dialog .two{display:flex;gap:8px}dialog .two>div{flex:1}
+ .note-links{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.note-links button{font-size:11px;padding:3px 7px;color:#cfe3ff;background:#2d4a73;border-color:#45658f;text-align:left}
+ #noteShade{position:fixed;inset:0;background:#0009;z-index:20;display:none}#noteDrawer{position:fixed;z-index:21;right:0;top:0;height:100vh;width:min(1440px,78vw);background:var(--bg);border-left:1px solid #444a57;box-shadow:-10px 0 40px #0008;display:flex;flex-direction:column;transform:translateX(102%);transition:transform .18s ease}
+ #noteDrawer.open{transform:translateX(0)}#noteShade.open{display:block}.nh{padding:14px 18px;border-bottom:1px solid #444a57;display:flex;align-items:center;gap:12px}.nh>div{min-width:0;flex:1}.nh h2{font-size:16px;margin:0 0 4px}.nh small{color:var(--mut);overflow-wrap:anywhere}.nh button{font-size:18px;padding:2px 10px}.noteBody{overflow:auto;padding:22px 28px;line-height:1.65;overflow-wrap:anywhere}.noteBody h1,.noteBody h2,.noteBody h3,.noteBody h4{line-height:1.3;margin:1.3em 0 .55em}.noteBody h1{font-size:1.8em}.noteBody h2{font-size:1.45em;border-bottom:1px solid #444a57;padding-bottom:.25em}.noteBody p,.noteBody ul,.noteBody ol{margin:.7em 0}.noteBody table{border-collapse:collapse;display:block;overflow-x:auto;margin:1em 0}.noteBody th,.noteBody td{border:1px solid #555d6c;padding:6px 9px;text-align:left}.noteBody th{background:var(--col)}.noteBody blockquote{margin:1em 0;padding:2px 14px;border-left:3px solid var(--acc);color:#c0c7d3}.noteBody pre{overflow:auto;background:#15171c;padding:12px;border-radius:6px}.noteBody code{font-family:ui-monospace,SFMono-Regular,monospace;font-size:.9em}.noteBody :not(pre)>code{background:#333944;padding:2px 4px;border-radius:3px}.noteBody img{max-width:100%;height:auto}.noteBody svg{max-width:100%;height:auto}.noteBody .mermaid{background:#252932;padding:12px;border-radius:6px;overflow-x:auto;text-align:center}.noteState{color:var(--mut);padding:22px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+.chips .g{color:var(--mut);font-size:11px;margin:0 2px 0 8px}.chips .g:first-child{margin-left:0}
+.opt{padding:3px 8px;border-radius:14px;border:1px solid #444a57;background:var(--card);cursor:pointer;user-select:none;font-size:14px}
+.opt.on{border-color:var(--acc);background:#2d4a73}
+.taginput{display:flex;flex-wrap:wrap;gap:6px;padding:5px;background:var(--card);border:1px solid #444a57;border-radius:6px;margin-bottom:8px}
+.taginput:focus-within{border-color:var(--acc)}
+.taginput .tg{background:#2d4a73;color:#cfe3ff;border-radius:12px;padding:2px 4px 2px 9px;font-size:12px;display:flex;gap:4px;align-items:center}
+.taginput .tg b{cursor:pointer;font-weight:400;color:#9db8dd;padding:0 4px}.taginput .tg b:hover{color:#fff}
+.taginput input{flex:1;min-width:120px;border:none;background:none;outline:none;padding:3px}
+.meta{color:var(--mut);font-size:11px;margin:0 0 8px}.hist{max-height:120px;overflow-y:auto;font-size:12px;color:var(--mut);margin-bottom:8px;border-top:1px solid #444a57;padding-top:6px}
+.hist div{margin:2px 0}.hist b{color:var(--fg);font-weight:500}
+.ct{white-space:pre-wrap;color:#b9bfcc;font-size:12px;margin-top:5px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:20;-webkit-box-orient:vertical}
+body.full .ct{display:block;-webkit-line-clamp:unset}
+a{color:var(--acc)}.row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+</style></head><body>
+ <header><h1 id="boardTitle">Personal Kanban</h1><input id="q" placeholder="Search / #tag" size="28"><button id="refreshDevlog" title="Refresh Devlog note links now">↻ Update Devlog</button><span id="refreshStatus" style="color:var(--mut);font-size:11px;white-space:nowrap"></span><button id="addcol">+ Column</button>
+<label><input type="checkbox" id="showArch"> Show Archive</label><label><input type="checkbox" id="fullc"> Full content</label>
+<a href="/api/export.md" download="Kanban.md">Export .md</a></header>
+<div id="board"></div>
+<div id="noteShade"></div><aside id="noteDrawer" aria-label="Devlog note" aria-hidden="true"><div class="nh"><div><h2 id="noteTitle">Devlog note</h2><small id="notePath"></small></div><button id="noteClose" aria-label="Close note">×</button></div><div class="noteBody" id="noteBody"></div></aside>
+<dialog id="dlg">
+<label class="f">Title</label><input type="text" id="dt">
+<label class="f">Priority / type</label><div class="chips" id="dm"></div>
+<label class="f">Content</label><textarea id="db"></textarea>
+<label class="f">Tags (type, then Enter / space / comma)</label>
+<div class="taginput" id="dgbox"><input id="dgin" list="taglist" placeholder="add tag…"></div><datalist id="taglist"></datalist>
+<div class="meta" id="meta"></div><label class="f">History</label><div class="hist" id="hist"></div>
+<div class="row"><span><label><input type="checkbox" id="dd"> Done</label> <input type="date" id="dx" title="Done date"></span>
+<span><button id="del">Delete</button> <button id="cancel">Cancel</button> <button id="save">Save</button></span></div></dialog>
+ <script src="/marked.min.js"></script><script src="/purify.min.js"></script><script src="/mermaid.min.js"></script><script>
+ const $=s=>document.querySelector(s);let data=[],editing=null,dragId=null,noteRequest=0;
+const api=(m,u,b)=>fetch('/api/'+u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined}).then(r=>r.json());
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const linkify=s=>esc(s).replace(/https?:\/\/[^\s<]+/g,u=>`<a href="${u}" target="_blank" onclick="event.stopPropagation()">${u.replace(/^https?:\/\/(www\.)?/,'').slice(0,40)}…</a>`);
+  async function load(){const config=await api('GET','config');document.title=config.board_name;$('#boardTitle').textContent=config.board_name;data=await api('GET','board');render()}
+ let refreshingDevlog=false;
+ async function refreshDevlog(){if(refreshingDevlog)return;refreshingDevlog=true;const button=$('#refreshDevlog');button.disabled=true;button.textContent='↻ Updating…';$('#refreshStatus').textContent='';try{const response=await fetch('/api/devlog-refresh',{method:'POST'});if(!response.ok)throw new Error('HTTP '+response.status);const result=await response.json();data=result.board;render();const when=new Date(result.scanned_at.replace(' ','T'));$('#refreshStatus').textContent='Updated '+when.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}catch(error){$('#refreshStatus').textContent='Devlog update failed';console.error('Devlog refresh failed',error)}finally{refreshingDevlog=false;button.disabled=false;button.textContent='↻ Update Devlog'}}
+function match(k,q){if(!q)return true;q=q.toLowerCase();return (k.marker+' '+k.title+' '+k.content+' '+k.tags.map(x=>'#'+x).join(' ')).toLowerCase().includes(q)}
+function render(){const q=$('#q').value.trim(),b=$('#board');b.innerHTML='';
+ for(const c of data){const nm=c.name.toLowerCase();if(nm==='archive'&&!$('#showArch').checked)continue;const el=document.createElement('div');el.className='col'+(c.collapsed?' collapsed':'');
+  const cards=c.cards.filter(k=>match(k,q));
+  el.innerHTML=`<div class="ch"><span class="name">${esc(c.name)}</span><span class="n">${cards.length}</span><button data-a="ren">✎</button><button data-a="del">✕</button></div>`;
+  const ch=el.querySelector('.ch');
+  ch.querySelector('.name').onclick=()=>{api('PATCH','columns/'+c.id,{collapsed:!c.collapsed}).then(load)};
+  ch.querySelector('[data-a=ren]').onclick=()=>{const n=prompt('Rename column',c.name);if(n)api('PATCH','columns/'+c.id,{name:n}).then(load)};
+  ch.querySelector('[data-a=del]').onclick=()=>{if(confirm(`Delete column "${c.name}" and its ${c.cards.length} cards?`))api('DELETE','columns/'+c.id).then(load)};
+  if(!c.collapsed){const box=document.createElement('div');box.className='cards';
+   for(const k of cards){const d=document.createElement('div');d.className='card'+(k.done?' done':'');d.draggable=true;d.dataset.id=k.id;
+     d.innerHTML=`<div class="t"><span class="mk">${esc(k.marker)}</span>${linkify(k.title)}${k.done_date?`<span class="dd">✅ ${k.done_date}</span>`:''}</div>${k.content?`<div class="ct">${linkify(k.content)}</div>`:''}${k.devlog_notes?.length?`<div class="note-links">${k.devlog_notes.map((n,i)=>`<button type="button" data-note="${i}">📄 ${esc(n.title)}</button>`).join('')}</div>`:''}<div class="tags">${k.tags.map(t=>`<span>#${esc(t)}</span>`).join('')}</div>`;
+     d.onclick=()=>openEdit(k);
+     d.querySelectorAll('.note-links button').forEach(btn=>btn.onclick=e=>{e.preventDefault();e.stopPropagation();openNote(k.devlog_notes[Number(btn.dataset.note)])});
+    d.querySelectorAll('.tags span').forEach(s=>s.onclick=e=>{e.stopPropagation();$('#q').value=s.textContent;render()});
+    d.ondragstart=()=>{dragId=k.id;d.classList.add('drag')};d.ondragend=()=>d.classList.remove('drag');box.appendChild(d)}
+   box.ondragover=e=>{e.preventDefault();box.classList.add('over')};box.ondragleave=()=>box.classList.remove('over');
+   box.ondrop=async e=>{e.preventDefault();box.classList.remove('over');
+    const vis=[...box.children].filter(x=>x.dataset.id!=dragId);
+    let idx=vis.findIndex(x=>e.clientY<x.getBoundingClientRect().top+x.offsetHeight/2);
+    const full=c.cards.filter(k=>k.id!=dragId);
+    // map visible index -> full-list index (matters when a search filter is active)
+    const ref=idx<0?null:vis[idx];idx=ref?full.findIndex(k=>k.id==ref.dataset.id):full.length;
+    await api('POST',`cards/${dragId}/move`,{column_id:c.id,index:idx});load()};
+   el.appendChild(box);
+   const add=document.createElement('div');add.className='add';add.innerHTML='<input placeholder="+ Add card (Enter)">';
+   add.firstChild.onkeydown=async e=>{if(e.key==='Enter'&&e.target.value.trim()){await api('POST','cards',quick(c.id,e.target.value.trim()));load()}};
+   el.appendChild(add)}
+  b.appendChild(el)}}
+function quick(cid,s){const m=s.match(/^((?:[0-9]\uFE0F?\u20E3|[\u{1F000}-\u{1FAFF}\u2600-\u27BF\u2B00-\u2BFF\u23E9-\u23FF]\uFE0F?|\s)+)/u);
+ const marker=m?m[1].replace(/\s+/g,''):'';s=m?s.slice(m[0].length):s;const tags=(s.match(/(?:^|\s)#([\w\-]+)/g)||[]).map(x=>x.trim().slice(1));
+ return {column_id:cid,marker,title:s.replace(/(?:^|\s)#[\w\-]+/g,'').trim(),tags}}
+const GROUPS=[['Priority',false,['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','⏫','🔼','🔽','⏬','🔺']],['Urgent',false,['🔥','🔥🔥','🔥🔥🔥','🔥🔥🔥🔥']],['Type',true,['🐛','🔍','👀']]];
+let sel=new Set(),tags=[];
+function parseMarker(m){const out=new Set();const f=m.match(/🔥+/);if(f)out.add(f[0]);m=m.replace(/🔥+/g,'');
+ for(const o of GROUPS[0][2].concat(GROUPS[2][2]))if(m.includes(o))out.add(o);return out}
+function marker(){const g=i=>GROUPS[i][2].filter(o=>sel.has(o));return g(1).join('')+g(0).join('')+g(2).join('')}
+function renderMarker(){const box=$('#dm');box.innerHTML='';
+ for(const [name,multi,opts] of GROUPS){const l=document.createElement('span');l.className='g';l.textContent=name;box.appendChild(l);
+  for(const o of opts){const s=document.createElement('span');s.className='opt'+(sel.has(o)?' on':'');s.textContent=o;
+   s.onclick=()=>{if(sel.has(o))sel.delete(o);else{if(!multi)opts.forEach(x=>sel.delete(x));sel.add(o)}renderMarker()};box.appendChild(s)}}}
+function renderTags(){const box=$('#dgbox');box.querySelectorAll('.tg').forEach(x=>x.remove());const inp=$('#dgin');
+ tags.forEach((t,i)=>{const s=document.createElement('span');s.className='tg';s.innerHTML=`#${esc(t)}<b>×</b>`;s.querySelector('b').onclick=()=>{tags.splice(i,1);renderTags()};box.insertBefore(s,inp)})}
+function commitTag(){const v=$('#dgin').value.split(/[\s,]+/).map(x=>x.replace(/^#+/,'')).filter(Boolean);
+ v.forEach(x=>{if(!tags.includes(x))tags.push(x)});$('#dgin').value='';renderTags()}
+$('#dgin').onkeydown=e=>{if(e.key==='Enter'||e.key===' '||e.key===','){e.preventDefault();commitTag()}
+ else if(e.key==='Backspace'&&!e.target.value&&tags.length){tags.pop();renderTags()}};
+$('#dgin').onblur=commitTag;$('#dgbox').onclick=()=>$('#dgin').focus();
+function openEdit(k){editing=k;sel=parseMarker(k.marker);tags=[...k.tags];renderMarker();renderTags();
+ const all=[...new Set(data.flatMap(c=>c.cards.flatMap(x=>x.tags)))].sort();$('#taglist').innerHTML=all.map(x=>`<option value="${esc(x)}">`).join('');
+ $('#dt').value=k.title;$('#db').value=k.content;$('#dd').checked=k.done;$('#dx').value=k.done_date;$('#meta').textContent=`Created ${k.created_at.replace('T',' ')} · Updated ${k.updated_at.replace('T',' ')}`;
+ $('#hist').textContent='…';api('GET',`cards/${k.id}/history`).then(h=>{$('#hist').innerHTML=h.map(e=>{const w=e.at.replace('T',' ');
+  const d=e.type==='created'?`<b>created</b> in ${esc(e.to_col||'')}`:e.type==='moved'?`<b>moved</b> ${esc(e.from_col||'')} → ${esc(e.to_col||'')}`:e.type==='edited'?`<b>edited</b> ${esc(e.detail)}`:`<b>${e.type}</b>`;
+  return `<div>${w} — ${d}</div>`}).join('')});
+ $('#dlg').showModal()}
+$('#save').onclick=async()=>{commitTag();await api('PATCH','cards/'+editing.id,{marker:marker(),title:$('#dt').value,content:$('#db').value,tags,done:$('#dd').checked,done_date:$('#dx').value});$('#dlg').close();load()};
+$('#cancel').onclick=()=>$('#dlg').close();
+$('#del').onclick=async()=>{if(confirm('Delete card?')){await api('DELETE','cards/'+editing.id);$('#dlg').close();load()}};
+$('#addcol').onclick=()=>{const n=prompt('Column name');if(n)api('POST','columns',{name:n}).then(load)};
+  $('#q').oninput=render;$('#refreshDevlog').onclick=refreshDevlog;['showArch','fullc'].forEach(i=>{const e=document.getElementById(i);e.checked=localStorage.getItem(i)==='1';e.onchange=()=>{localStorage.setItem(i,e.checked?'1':'0');document.body.classList.toggle('full',$('#fullc').checked);render()}});document.body.classList.toggle('full',$('#fullc').checked);load();setInterval(refreshDevlog,5*60*1000);
+ mermaid.initialize({startOnLoad:false,securityLevel:'strict',theme:'dark'});
+ async function openNote(note){const request=++noteRequest;const drawer=$('#noteDrawer');drawer.classList.add('open');$('#noteShade').classList.add('open');drawer.setAttribute('aria-hidden','false');$('#noteTitle').textContent=note.title;$('#notePath').textContent=note.path;$('#noteBody').innerHTML='<div class="noteState">Loading note…</div>';
+  try{const resp=await fetch('/api/devlog-note?path='+encodeURIComponent(note.path));if(!resp.ok)throw new Error('Unable to load note ('+resp.status+')');const doc=await resp.json();$('#noteTitle').textContent=doc.title;$('#notePath').textContent=doc.path;
+   if(request!==noteRequest)return;
+   const diagrams=[];const source=doc.content.replace(/^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/,'');const text=source.replace(/^```mermaid\s*\n([\s\S]*?)\n```\s*$/gm,(_,code)=>{const token='KANBANMERMAIDPLACEHOLDER'+diagrams.length+'END';diagrams.push(code);return '\n\n'+token+'\n\n'});
+   const rendered=marked.parse(text,{gfm:true,breaks:false});let safe=DOMPurify.sanitize(rendered,{USE_PROFILES:{html:true}});const template=document.createElement('template');template.innerHTML=safe;
+   template.content.querySelectorAll('a[href]').forEach(a=>{if(/^https?:/i.test(a.getAttribute('href'))){a.target='_blank';a.rel='noopener noreferrer'}else if(!a.getAttribute('href').startsWith('#'))a.removeAttribute('href')});
+   template.content.querySelectorAll('img[src]').forEach(img=>{if(!/^(https?:|data:image\/)/i.test(img.getAttribute('src')))img.remove()});$('#noteBody').replaceChildren(template.content);
+   for(let i=0;i<diagrams.length;i++){const token='KANBANMERMAIDPLACEHOLDER'+i+'END';const walker=document.createTreeWalker($('#noteBody'),NodeFilter.SHOW_TEXT);let node;while(node=walker.nextNode()){if(node.nodeValue.includes(token)){const holder=document.createElement('div');holder.className='mermaid';holder.textContent=diagrams[i];const parts=node.nodeValue.split(token);const after=document.createTextNode(parts[1]||'');node.parentNode.insertBefore(holder,node);node.parentNode.insertBefore(after,node.nextSibling);node.nodeValue=parts[0];break}}}
+   try{await mermaid.run({querySelector:'#noteBody .mermaid'})}catch(error){console.error('Mermaid render failed',error);$('#noteBody').querySelectorAll('.mermaid').forEach(el=>{const pre=document.createElement('pre');pre.textContent=el.textContent;el.replaceWith(pre)})}
+  }catch(error){$('#noteBody').innerHTML='<div class="noteState">'+esc(error.message||'Failed to load note')+'</div>'}}
+ function closeNote(){noteRequest++;const drawer=$('#noteDrawer');drawer.classList.remove('open');$('#noteShade').classList.remove('open');drawer.setAttribute('aria-hidden','true')}
+ $('#noteClose').onclick=closeNote;$('#noteShade').onclick=closeNote;document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#noteDrawer').classList.contains('open'))closeNote()});
+ </script></body></html>
