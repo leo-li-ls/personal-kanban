@@ -16,6 +16,30 @@ cp ~/Code/devlog-skill/SKILL.md ~/.config/opencode/skills/devlog/SKILL.md
 
 Restart OpenCode (or start a new session) so it discovers the skill. For other AI agents, follow their skill-installation instructions and install the same `SKILL.md` before asking the agent to use the board.
 
+## Install the Personal Kanban agent skill
+
+This repository includes a reusable board-operation skill at `skills/personal-kanban/SKILL.md`. Install it into your agent's user-level skills directory so it can find and operate the correct board from its project directory. The skill reads the current installation's `config.json`; it does not contain a hard-coded home directory.
+
+### OpenCode
+
+```sh
+mkdir -p ~/.config/opencode/skills/personal-kanban
+cp skills/personal-kanban/SKILL.md ~/.config/opencode/skills/personal-kanban/SKILL.md
+```
+
+Start a new OpenCode session to load the skill. The separate Devlog skill above is still required for Devlog workflows.
+
+### Claude Code
+
+```sh
+mkdir -p ~/.claude/skills/personal-kanban
+cp skills/personal-kanban/SKILL.md ~/.claude/skills/personal-kanban/SKILL.md
+```
+
+Restart Claude Code or start a new session. For other agents, copy the skill folder into their documented user-level skills location and start a new session.
+
+After installation, open the `personal-kanban` project as the agent's working directory and ask it to inspect your board. The skill instructs the agent to read `config.json`, use the project's CLI, verify changes, and consult the configured Devlog data only via the separately installed Devlog skill.
+
 The skill repository is **not** your personal log. Create/use your separate Devlog data folder according to the repository's README. The data folder must contain readable `AGENTS.md`, `index.md`, and a populated `projects/` directory with Markdown notes. Keep private project notes in a private location.
 
 ## Install and initialize
@@ -84,7 +108,7 @@ Load/start it with `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.
 
 ## Use from an AI agent
 
-Install the Devlog skill first (see above), then open this project as the agent's working directory. Tell the agent to read `README.md` and `config.json` before using the board; `config.json` identifies both the board title and the actual Devlog data root. The agent can inspect Devlog notes in `projects/` and should follow the installed Devlog skill for recording and querying project context.
+Install both the Devlog skill and Personal Kanban skill (see above), then open this project as the agent's working directory. The agent should read `README.md`, `AGENTS.md`, and `config.json` before using the board; `config.json` identifies both the board title and the actual Devlog data root. The kanban skill covers safe CLI and web API workflows, while the Devlog skill covers recording and querying project context.
 
 The board CLI uses the current project directory:
 
